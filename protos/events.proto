@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package tvos;
+
+message EventPayload {
+  string event_id = 1;
+  int64 timestamp_ms = 2;
+  string source = 3;
+  string text_payload = 4;        // optional
+  map<string, double> metrics = 5;
+  map<string, string> metadata = 6;
+}

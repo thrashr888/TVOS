@@ -1,0 +1,117 @@
+services:
+  # Infrastructure
+  weaviate:
+    image: semitechnologies/weaviate:1.27.1
+    command:
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --scheme
+      - http
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      DEFAULT_VECTORIZER_MODULE: "none"
+      ENABLE_MODULES: ""
+      CLUSTER_HOSTNAME: "node1"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost:8080/v1/.well-known/ready",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    ports:
+      - "19090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+
+  # TVOS Services
+  # All services merged into 'api' container for DuckDB concurrency (single process)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: uvicorn tvos.api:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+      - "5555:5555"
+    volumes:
+      - tvos_data:/data
+    environment:
+      REDIS_HOST: redis
+      WEAVIATE_URL: http://weaviate:8080
+      DUCKDB_PATH: /data/tvos.duckdb
+      ZMQ_PULL_PORT: 5555
+    depends_on:
+      redis:
+        condition: service_healthy
+      weaviate:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    ports:
+      - "3000:80"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  collectors:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ./scripts/run_collectors.sh
+    environment:
+      ZMQ_HOST: api
+      ZMQ_PULL_PORT: 5555
+      SHELL_HISTORY_PATH: /host/zsh_history
+      CHROME_HISTORY_PATH: /host/chrome_history
+    volumes:
+      - ${HOME}/.zsh_history:/host/zsh_history:ro
+      - ${HOME}/Library/Application Support/Google/Chrome/Default/History:/host/chrome_history:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  weaviate_data:
+  redis_data:
+  prometheus_data:
+  tvos_data:
