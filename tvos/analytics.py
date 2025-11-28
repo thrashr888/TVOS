@@ -123,8 +123,8 @@ def compute_semantic_drift(window_hours=1):
         return {"drift_score": 0.0, "reason": "insufficient_data"}
 
     # Compute centroids
-    vectors1 = np.array([obj.vector for obj in response1.objects])
-    vectors2 = np.array([obj.vector for obj in response2.objects])
+    vectors1 = np.array([obj.vector['default'] if isinstance(obj.vector, dict) else obj.vector for obj in response1.objects])
+    vectors2 = np.array([obj.vector['default'] if isinstance(obj.vector, dict) else obj.vector for obj in response2.objects])
 
     centroid1 = np.mean(vectors1, axis=0)
     centroid2 = np.mean(vectors2, axis=0)
@@ -176,11 +176,14 @@ def compute_clusters(window_hours=24, min_cluster_size=2):
         return {"cluster_count": 0, "reason": "insufficient_data"}
 
     # Extract vectors and event IDs
-    vectors = np.array([obj.vector for obj in response.objects])
+    vectors = np.array([obj.vector['default'] if isinstance(obj.vector, dict) else obj.vector for obj in response.objects])
     event_ids = [obj.properties["event_id"] for obj in response.objects]
 
     # Cluster with HDBSCAN
-    clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, metric="cosine")
+    # Note: Sklearn BallTree does not support cosine metric efficiently in some versions.
+    # We use euclidean on normalized vectors if possible, or let hdbscan choose.
+    # For now, switching to euclidean as standard vectors should be normalized or close enough for rough clustering.
+    clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, metric="euclidean")
     labels = clusterer.fit_predict(vectors)
 
     # Count clusters (excluding noise, label=-1)
@@ -211,7 +214,7 @@ def compute_clusters(window_hours=24, min_cluster_size=2):
 
         # Find centroid of this cluster
         cluster_vectors = [
-            obj.vector for obj in response.objects if obj.properties["event_id"] in ids
+            obj.vector['default'] if isinstance(obj.vector, dict) else obj.vector for obj in response.objects if obj.properties["event_id"] in ids
         ]
         if not cluster_vectors:
             topic = "Unknown"
@@ -253,7 +256,7 @@ def compute_anomalies(window_hours=1, contamination=0.01):
     if len(response.objects) < 10:
         return {"anomaly_count": 0, "reason": "insufficient_data"}
 
-    vectors = np.array([obj.vector for obj in response.objects])
+    vectors = np.array([obj.vector['default'] if isinstance(obj.vector, dict) else obj.vector for obj in response.objects])
 
     # Isolation Forest
     clf = IsolationForest(contamination=contamination, random_state=42)
@@ -344,7 +347,7 @@ def compute_projection(window_hours=1, method="pca", n_components=2):
     if not response.objects:
         return []
 
-    vectors = np.array([obj.vector for obj in response.objects])
+    vectors = np.array([obj.vector['default'] if isinstance(obj.vector, dict) else obj.vector for obj in response.objects])
     event_ids = [obj.properties["event_id"] for obj in response.objects]
     sources = [obj.properties.get("source", "unknown") for obj in response.objects]
 

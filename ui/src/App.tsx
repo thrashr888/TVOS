@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Terminal,
   Map,
+  MessageSquare,
 } from 'lucide-react'
 import { EventStream } from './components/EventStream'
 import { SemanticSearch } from './components/SemanticSearch'
@@ -20,6 +21,7 @@ import { Dashboard } from './components/Dashboard'
 import { AnomalyFeed } from './components/AnomalyFeed'
 import { EmbeddingExplorer } from './components/EmbeddingExplorer'
 import { TVQLConsole } from './components/TVQLConsole'
+import ChatInterface from './components/ChatInterface'
 import './index.css'
 
 const queryClient = new QueryClient()
@@ -50,6 +52,7 @@ function AppContent() {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'stream', label: 'Event Stream', icon: Activity },
     { id: 'search', label: 'Semantic Search', icon: Search },
+    { id: 'chat', label: 'Chat', icon: MessageSquare },
     { id: 'drift', label: 'Drift', icon: TrendingUp },
     { id: 'clusters', label: 'Clusters', icon: Network },
     { id: 'anomalies', label: 'Anomalies', icon: AlertTriangle },
@@ -146,6 +149,7 @@ function AppContent() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/stream" element={<EventStream timeRange={timeRange} />} />
           <Route path="/search" element={<SemanticSearch externalQuery={globalSearchQuery} />} />
+          <Route path="/chat" element={<ChatInterface />} />
           <Route path="/drift" element={<DriftChart />} />
           <Route path="/clusters" element={<ClusterView />} />
           <Route path="/anomalies" element={<AnomalyFeed />} />

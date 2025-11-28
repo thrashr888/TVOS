@@ -7,13 +7,13 @@ class LLMClient:
         self.provider = Config.LLM_PROVIDER
         # Prefer specific keys if provider is set, otherwise fallback to generic LLM_API_KEY
         if self.provider == "openai":
-            self.api_key = Config.OPENAI_API_KEY or Config.LLM_API_KEY
+            self.api_key = Config.OPENAI_API_KEY
         elif self.provider == "anthropic":
-            self.api_key = Config.ANTHROPIC_API_KEY or Config.LLM_API_KEY
+            self.api_key = Config.ANTHROPIC_API_KEY
         elif self.provider == "gemini":
-            self.api_key = Config.GEMINI_API_KEY or Config.LLM_API_KEY
+            self.api_key = Config.GEMINI_API_KEY
         else:
-            self.api_key = Config.LLM_API_KEY
+            raise ValueError(f"Unsupported LLM provider: {self.provider}")
 
         print(f"LLMClient initialized with provider: {self.provider}")
 
@@ -76,6 +76,35 @@ class LLMClient:
 
         return self._call_llm(prompt, "explanation")
 
+    def chat(self, query, context_events):
+        """
+        Answer a user query based on context events.
+        """
+        context_text = ""
+        for e in context_events:
+            payload = e.get("text_payload", "")
+            source = e.get("source", "unknown")
+            ts = e.get("timestamp_ms", 0)
+            context_text += f"[{ts}] [{source}] {payload}\n"
+
+        if not context_text:
+            context_text = "No relevant events found."
+
+        prompt = f"""
+        You are a helpful assistant for a system observability platform.
+        Answer the user's question based ONLY on the provided log events.
+        If the answer cannot be found in the events, say so.
+        
+        User Question: {query}
+        
+        Relevant Log Events:
+        {context_text}
+        
+        Answer:
+        """
+
+        return self._call_llm(prompt, "chat")
+
     def _call_llm(self, prompt, task_type):
         try:
             if self.provider == "openai":
@@ -85,25 +114,19 @@ class LLMClient:
             elif self.provider == "gemini":
                 return self._call_gemini(prompt)
             else:
-                return self._mock_response(task_type)
+                raise ValueError(f"Unsupported LLM provider: {self.provider}")
         except Exception as e:
             print(f"LLM Error ({self.provider}): {e}")
             return f"Error generating {task_type}"
-
-    def _mock_response(self, task_type):
-        if task_type == "topic":
-            return "System Activity"
-        else:
-            return "This event deviates from the norm due to unusual keywords."
 
     def _call_openai(self, prompt):
         from openai import OpenAI
 
         client = OpenAI(api_key=self.api_key)
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Fast, cheap
+            model=Config.OPENAI_MODEL,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=50,
+            max_tokens=150,
         )
         return response.choices[0].message.content.strip()
 
@@ -112,8 +135,8 @@ class LLMClient:
 
         client = anthropic.Anthropic(api_key=self.api_key)
         message = client.messages.create(
-            model="claude-3-haiku-20240307",
-            max_tokens=50,
+            model=Config.ANTHROPIC_MODEL,
+            max_tokens=150,
             messages=[{"role": "user", "content": prompt}],
         )
         return message.content[0].text.strip()
@@ -122,6 +145,6 @@ class LLMClient:
         import google.generativeai as genai
 
         genai.configure(api_key=self.api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel(Config.GEMINI_MODEL)
         response = model.generate_content(prompt)
         return response.text.strip()

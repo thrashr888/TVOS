@@ -307,3 +307,45 @@ def get_embedding_projection(window_hours: int = 1, method: str = "pca"):
         print(f"Projection Error: {e}")
         # Return empty list instead of 500 to avoid crashing frontend
         return []
+
+
+class ChatQuery(BaseModel):
+    query: str
+    limit: int = 20
+
+
+@app.post("/chat")
+def chat_with_data(q: ChatQuery):
+    """Chat with the data using RAG"""
+    from tvos.llm import LLMClient
+    
+    # 1. Embed query
+    vector = model.encode(q.query).tolist()
+
+    # 2. Retrieve relevant events
+    wc = WeaviateClient()
+    results = wc.search_similar(vector, limit=q.limit)
+    wc.close()
+
+    event_ids = [obj.properties["event_id"] for obj in results]
+    
+    context_events = []
+    if event_ids:
+        from tvos.db import get_db_connection
+        con = get_db_connection()
+        placeholders = ",".join(["?"] * len(event_ids))
+        rows = con.execute(
+            f"SELECT event_id, text_payload, source, timestamp_ms FROM events WHERE event_id IN ({placeholders})",
+            event_ids,
+        ).fetchall()
+        
+        context_events = [
+            {"event_id": r[0], "text_payload": r[1], "source": r[2], "timestamp_ms": r[3]} 
+            for r in rows
+        ]
+
+    # 3. Call LLM
+    llm = LLMClient()
+    answer = llm.chat(q.query, context_events)
+    
+    return {"answer": answer, "context_count": len(context_events)}

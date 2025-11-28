@@ -12,13 +12,21 @@ RUN apt-get update && apt-get install -y \
 # Install uv for faster dependency management
 RUN pip install uv
 
-# Copy project files
-COPY pyproject.toml .
+# Copy dependency definitions first to leverage caching
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies
+# Create a dummy package to satisfy setuptools finding the package
+RUN mkdir -p tvos && touch tvos/__init__.py && \
+    uv pip install --system . && \
+    rm -rf tvos
+
+# Copy source code
 COPY tvos ./tvos
 COPY protos ./protos
 COPY scripts ./scripts
 
-# Install dependencies
+# Install the project in editable mode (deps already installed)
 RUN uv pip install --system -e .
 
 # Compile protobufs
