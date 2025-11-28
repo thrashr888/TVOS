@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Test embedding worker flow"""
+
 import redis
 from tvos.config import Config
 

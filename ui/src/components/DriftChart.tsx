@@ -1,77 +1,91 @@
-import { useQuery } from '@tanstack/react-query';
-import { api } from '../lib/api';
-import { TrendingUp } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
+import { TrendingUp, RefreshCw } from 'lucide-react'
+import { api } from '../lib/api'
 
 export function DriftChart() {
-    const { data: drift, isLoading } = useQuery({
-        queryKey: ['drift'],
-        queryFn: () => api.getDrift(),
-        refetchInterval: 10000,
-    });
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['drift-history'],
+    queryFn: () => api.getDriftHistory(50),
+    refetchInterval: 60000,
+  })
 
-    const { data: stats } = useQuery({
-        queryKey: ['stats'],
-        queryFn: () => api.getWindowStats(),
-        refetchInterval: 10000,
-    });
+  if (isLoading) {
+    return <div className="p-8 text-center text-muted-foreground">Loading drift history...</div>
+  }
 
-    return (
-        <div className="space-y-6">
-            <div>
-                <h2 className="text-2xl font-bold text-foreground">Semantic Drift Analysis</h2>
-                <p className="text-muted-foreground">
-                    Detect semantic drift by comparing embedding centroids across time windows
-                </p>
-            </div>
+  const history = data || []
+  // Reverse to show oldest to newest left to right
+  const chartData = [...history].reverse().map((d: any) => ({
+    ...d,
+    time: new Date(d.timestamp).toLocaleTimeString(),
+  }))
 
-            {isLoading && (
-                <div className="text-center py-12 text-muted-foreground">Loading drift data...</div>
-            )}
-
-            {drift && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="glass rounded-lg p-6">
-                        <div className="flex items-center gap-3 mb-2">
-                            <TrendingUp className="w-5 h-5 text-purple-400" />
-                            <h3 className="text-sm font-medium text-muted-foreground">Drift Score</h3>
-                        </div>
-                        <p className="text-3xl font-bold text-foreground">
-                            {drift.drift_score?.toFixed(4) || '0.0000'}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">Cosine distance between windows</p>
-                    </div>
-
-                    <div className="glass rounded-lg p-6">
-                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Window 1</h3>
-                        <p className="text-3xl font-bold text-foreground">{drift.window1_count || 0}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Events in previous window</p>
-                    </div>
-
-                    <div className="glass rounded-lg p-6">
-                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Window 2</h3>
-                        <p className="text-3xl font-bold text-foreground">{drift.window2_count || 0}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Events in current window</p>
-                    </div>
-                </div>
-            )}
-
-            {stats && (
-                <div className="glass rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-foreground mb-4">Window Statistics</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div>
-                            <p className="text-sm text-muted-foreground">Total Events</p>
-                            <p className="text-2xl font-bold text-foreground">{stats.event_count}</p>
-                        </div>
-                        {stats.avg_metrics && Object.entries(stats.avg_metrics).map(([key, value]) => (
-                            <div key={key}>
-                                <p className="text-sm text-muted-foreground">{key} (avg)</p>
-                                <p className="text-2xl font-bold text-foreground">{value.toFixed(2)}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="flex items-center gap-2 text-xl font-semibold text-white">
+            <TrendingUp className="h-5 w-5 text-orange-500" />
+            Semantic Drift Timeline
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Tracking conceptual shifts in system behavior over time.
+          </p>
         </div>
-    );
+        <button
+          onClick={() => refetch()}
+          className="rounded-lg p-2 transition-colors hover:bg-white/5"
+        >
+          <RefreshCw className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </div>
+
+      <div className="glass h-[400px] rounded-xl border border-white/5 p-6">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+            <XAxis
+              dataKey="time"
+              stroke="#ffffff40"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              stroke="#ffffff40"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+              domain={[0, 'auto']}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: '#0f172a',
+                border: '1px solid #ffffff10',
+                borderRadius: '8px',
+              }}
+              itemStyle={{ color: '#fff' }}
+            />
+            <Line
+              type="monotone"
+              dataKey="score"
+              stroke="#f97316"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 6, fill: '#f97316' }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
 }

@@ -1,9 +1,11 @@
 import duckdb
 import json
+import threading
 from tvos.config import Config
 
 # Global singleton connection
 _SHARED_CONN = None
+_DB_LOCK = threading.Lock()
 
 
 def get_db_connection():
@@ -13,10 +15,15 @@ def get_db_connection():
     file locking conflicts (e.g. read_only vs read_write mismatches).
     """
     global _SHARED_CONN
-    if _SHARED_CONN is None:
-        print(f"Initializing shared DuckDB connection to {Config.DUCKDB_PATH}")
-        # Open in read-write mode (default)
-        _SHARED_CONN = duckdb.connect(Config.DUCKDB_PATH, read_only=False)
+    with _DB_LOCK:
+        if _SHARED_CONN is None:
+            print(f"Initializing shared DuckDB connection to {Config.DUCKDB_PATH}")
+            # Open in read-write mode (default)
+            try:
+                _SHARED_CONN = duckdb.connect(Config.DUCKDB_PATH, read_only=False)
+            except Exception as e:
+                print(f"Error connecting to DuckDB: {e}")
+                raise e
     return _SHARED_CONN
 
 
@@ -41,6 +48,25 @@ def init_db():
         CREATE TABLE IF NOT EXISTS embeddings (
             embedding_id VARCHAR PRIMARY KEY,
             vector_dim INTEGER,
+            created_at TIMESTAMP
+        )
+    """)
+
+    # Drift History table
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS drift_history (
+            timestamp_ms BIGINT,
+            score DOUBLE,
+            window_hours INTEGER
+        )
+    """)
+
+    # Anomalies table
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS anomalies (
+            event_id VARCHAR,
+            score DOUBLE,
+            explanation TEXT,
             created_at TIMESTAMP
         )
     """)

@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Check embeddings"""
+
 import duckdb
 from tvos.config import Config
 from tvos.weaviate_client import WeaviateClient
 
 # Check DuckDB
 con = duckdb.connect(Config.DUCKDB_PATH, read_only=True)
-result = con.execute("SELECT count(*) FROM events WHERE embedding_id IS NOT NULL").fetchone()
+result = con.execute(
+    "SELECT count(*) FROM events WHERE embedding_id IS NOT NULL"
+).fetchone()
 print(f"Events with embeddings in DuckDB: {result[0]}")
 
 result = con.execute("SELECT count(*) FROM embeddings").fetchone()

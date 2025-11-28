@@ -57,6 +57,16 @@ async def websocket_events(websocket: WebSocket):
 # Start workers on startup
 @app.on_event("startup")
 def startup_event():
+    # Initialize DB first to ensure tables exist and connection is ready
+    from tvos.db import init_db
+    print("Initializing Database...")
+    try:
+        init_db()
+        print("Database initialized.")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+        # We might want to exit here, but let's try to continue
+    
     # Start Ingest Worker
     t_ingest = threading.Thread(target=run_ingest_worker, daemon=True)
     t_ingest.start()
@@ -189,7 +199,14 @@ def get_drift():
     drift_data = r.get("tvos:hot:drift:1h")
 
     if not drift_data:
-        raise HTTPException(status_code=404, detail="No drift data available")
+        # Return default empty structure instead of 404
+        return {
+            "drift_score": 0.0,
+            "window1_count": 0,
+            "window2_count": 0,
+            "window_hours": 1,
+            "reason": "no_data"
+        }
 
     return json.loads(drift_data)
 
@@ -220,3 +237,73 @@ def get_stats_window():
         raise HTTPException(status_code=404, detail="No stats data available")
 
     return json.loads(stats_data)
+
+
+@app.get("/analytics/drift/history")
+def get_drift_history(limit: int = 100):
+    """Get historical drift scores"""
+    try:
+        from tvos.db import get_db_connection
+
+        con = get_db_connection()
+        # Check if table exists first
+        try:
+            rows = con.execute(
+                "SELECT timestamp_ms, score, window_hours FROM drift_history ORDER BY timestamp_ms DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        except Exception:
+            # Table likely doesn't exist yet
+            return []
+
+        return [{"timestamp": r[0], "score": r[1], "window_hours": r[2]} for r in rows]
+    except Exception as e:
+        print(f"Error fetching drift history: {e}")
+        return []
+
+
+@app.get("/analytics/anomalies")
+def get_anomalies():
+    """Get current anomalies from Redis"""
+    r = redis.Redis(
+        host=Config.REDIS_HOST, port=Config.REDIS_PORT, decode_responses=True
+    )
+    anomaly_data = r.get("tvos:hot:anomalies:1h")
+
+    if not anomaly_data:
+        # Try to fetch from DB if not in Redis (optional, but for now just return empty or 404)
+        return {"anomaly_count": 0, "anomalies": []}
+
+    return json.loads(anomaly_data)
+
+
+class TVQLQuery(BaseModel):
+    query: str
+
+
+@app.post("/query/tvql")
+def query_tvql(q: TVQLQuery):
+    """Execute a TVQL query"""
+    from tvos.tvql import TVQLExecutor
+
+    try:
+        executor = TVQLExecutor()
+        results = executor.execute(q.query)
+        return {"results": results, "count": len(results)}
+    except Exception as e:
+        print(f"TVQL Error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/analytics/embeddings/projection")
+def get_embedding_projection(window_hours: int = 1, method: str = "pca"):
+    """Get 2D projection of embeddings"""
+    from tvos.analytics import compute_projection
+
+    try:
+        results = compute_projection(window_hours=window_hours, method=method)
+        return results
+    except Exception as e:
+        print(f"Projection Error: {e}")
+        # Return empty list instead of 500 to avoid crashing frontend
+        return []

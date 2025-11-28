@@ -16,3 +16,7 @@ build/
 .env
 node_modules
 ui/dist
+
+# Generated protobuf files
+*_pb2.py
+*_pb2.pyi
