@@ -65,13 +65,14 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
-    command: uvicorn tvos.api:app --host 0.0.0.0 --port 8000
+    command: sh -c "uvicorn tvos.api:app --host 0.0.0.0 --port 8000 2>&1 | tee -a /data/api.log"
     ports:
       - "8000:8000"
       - "5555:5555"
     volumes:
       - tvos_data:/data
     environment:
+      PYTHONUNBUFFERED: "1"
       REDIS_HOST: redis
       WEAVIATE_URL: http://weaviate:8080
       DUCKDB_PATH: /data/tvos.duckdb
@@ -110,6 +111,7 @@ services:
     volumes:
       - ${HOME}/.zsh_history:/host/zsh_history:ro
       - ${HOME}/Library/Application Support/Google/Chrome/Default/History:/host/chrome_history:ro
+      - tvos_data:/data
     depends_on:
       - api
     restart: unless-stopped

@@ -80,20 +80,20 @@ export function ClusterView() {
             {Object.entries(clusters.clusters).map(([clusterId, eventIds]) => (
               <div key={clusterId} className="border-l-2 border-purple-500 pl-4">
                 <h4 className="mb-2 text-sm font-medium text-purple-400">
-                  Cluster {clusterId} ({(eventIds as string[]).length} events)
+                  Cluster {clusterId} ({Array.isArray(eventIds) ? eventIds.length : 0} events)
                 </h4>
                 <div className="flex flex-wrap gap-2">
-                  {(eventIds as string[]).slice(0, 10).map((eventId) => (
+                  {Array.isArray(eventIds) && eventIds.slice(0, 10).map((eventId) => (
                     <span
                       key={eventId}
                       className="rounded bg-white/5 px-2 py-1 font-mono text-xs text-muted-foreground"
                     >
-                      {eventId.slice(0, 8)}...
+                      {typeof eventId === 'string' ? eventId.slice(0, 8) : String(eventId).slice(0, 8)}...
                     </span>
                   ))}
-                  {(eventIds as string[]).length > 10 && (
+                  {Array.isArray(eventIds) && eventIds.length > 10 && (
                     <span className="text-xs text-muted-foreground">
-                      +{(eventIds as string[]).length - 10} more
+                      +{eventIds.length - 10} more
                     </span>
                   )}
                 </div>

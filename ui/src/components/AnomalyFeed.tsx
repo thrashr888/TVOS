@@ -53,7 +53,7 @@ export function AnomalyFeed() {
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs text-red-400">
-                      {anomaly.event_id.slice(0, 8)}
+                      {typeof anomaly.event_id === 'string' ? anomaly.event_id.slice(0, 8) : 'Unknown'}
                     </span>
                     <span className="rounded-full border border-red-500/20 bg-red-500/10 px-2 py-1 text-xs text-red-400">
                       Score: {Math.abs(anomaly.score || -1).toFixed(2)}

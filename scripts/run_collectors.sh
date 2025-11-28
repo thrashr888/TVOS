@@ -4,6 +4,7 @@
 python3 scripts/ingest_shell_history.py &
 python3 scripts/ingest_browser_history.py &
 python3 scripts/ingest_system_metrics.py &
+python3 scripts/ingest_app_logs.py &
 
 # Wait for any process to exit
 wait -n
