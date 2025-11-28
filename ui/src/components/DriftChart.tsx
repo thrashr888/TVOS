@@ -30,15 +30,15 @@ export function DriftChart() {
   }))
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="glass h-full rounded-lg p-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="flex items-center gap-2 text-xl font-semibold text-white">
+          <h2 className="flex items-center gap-2 text-lg font-medium text-foreground">
             <TrendingUp className="h-5 w-5 text-orange-500" />
             Semantic Drift Timeline
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Tracking conceptual shifts in system behavior over time.
+          <p className="text-xs text-muted-foreground">
+            Tracking conceptual shifts in system behavior.
           </p>
         </div>
         <button
@@ -49,7 +49,7 @@ export function DriftChart() {
         </button>
       </div>
 
-      <div className="glass h-[400px] rounded-xl border border-white/5 p-6">
+      <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />

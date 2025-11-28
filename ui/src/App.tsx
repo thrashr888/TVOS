@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import {
   Activity,
   Search,
@@ -23,16 +24,6 @@ import './index.css'
 
 const queryClient = new QueryClient()
 
-type Tab =
-  | 'dashboard'
-  | 'stream'
-  | 'search'
-  | 'drift'
-  | 'clusters'
-  | 'anomalies'
-  | 'explorer'
-  | 'tvql'
-
 // Time ranges in hours
 const TIME_RANGES = [
   { label: 'Live', value: 0 },
@@ -43,24 +34,27 @@ const TIME_RANGES = [
 ]
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard')
+  const navigate = useNavigate()
+  const location = useLocation()
+  const activeTab = location.pathname.slice(1) || 'dashboard'
+
   const [globalSearchQuery, setGlobalSearchQuery] = useState('')
   const [timeRange, setTimeRange] = useState(0) // 0 = Live
 
   const handleGlobalSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    setActiveTab('search')
+    navigate('/search')
   }
 
   const tabs = [
-    { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'stream' as Tab, label: 'Event Stream', icon: Activity },
-    { id: 'search' as Tab, label: 'Semantic Search', icon: Search },
-    { id: 'drift' as Tab, label: 'Drift', icon: TrendingUp },
-    { id: 'clusters' as Tab, label: 'Clusters', icon: Network },
-    { id: 'anomalies' as Tab, label: 'Anomalies', icon: AlertTriangle },
-    { id: 'explorer' as Tab, label: 'Explorer', icon: Map },
-    { id: 'tvql' as Tab, label: 'TVQL', icon: Terminal },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'stream', label: 'Event Stream', icon: Activity },
+    { id: 'search', label: 'Semantic Search', icon: Search },
+    { id: 'drift', label: 'Drift', icon: TrendingUp },
+    { id: 'clusters', label: 'Clusters', icon: Network },
+    { id: 'anomalies', label: 'Anomalies', icon: AlertTriangle },
+    { id: 'explorer', label: 'Explorer', icon: Map },
+    { id: 'tvql', label: 'TVQL', icon: Terminal },
   ]
 
   return (
@@ -71,7 +65,7 @@ function AppContent() {
           <div className="flex items-center justify-between gap-8">
             <div
               className="flex flex-shrink-0 cursor-pointer items-center gap-3"
-              onClick={() => setActiveTab('dashboard')}
+              onClick={() => navigate('/dashboard')}
             >
               <div className="glow flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-orange-500">
                 <Activity className="h-6 w-6 text-white" />
@@ -129,7 +123,7 @@ function AppContent() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => navigate(`/${tab.id}`)}
                 className={cn(
                   'flex items-center gap-2 px-6 py-4 text-sm font-medium transition-all',
                   '-mb-px border-b-2',
@@ -148,14 +142,17 @@ function AppContent() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
-        {activeTab === 'dashboard' && <Dashboard />}
-        {activeTab === 'stream' && <EventStream timeRange={timeRange} />}
-        {activeTab === 'search' && <SemanticSearch externalQuery={globalSearchQuery} />}
-        {activeTab === 'drift' && <DriftChart />}
-        {activeTab === 'clusters' && <ClusterView />}
-        {activeTab === 'anomalies' && <AnomalyFeed />}
-        {activeTab === 'explorer' && <EmbeddingExplorer />}
-        {activeTab === 'tvql' && <TVQLConsole />}
+        <Routes>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/stream" element={<EventStream timeRange={timeRange} />} />
+          <Route path="/search" element={<SemanticSearch externalQuery={globalSearchQuery} />} />
+          <Route path="/drift" element={<DriftChart />} />
+          <Route path="/clusters" element={<ClusterView />} />
+          <Route path="/anomalies" element={<AnomalyFeed />} />
+          <Route path="/explorer" element={<EmbeddingExplorer />} />
+          <Route path="/tvql" element={<TVQLConsole />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
       </main>
     </div>
   )
@@ -164,7 +161,9 @@ function AppContent() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppContent />
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
     </QueryClientProvider>
   )
 }

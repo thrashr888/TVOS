@@ -24,9 +24,9 @@ export function Dashboard() {
   })
 
   return (
-    <div className="space-y-6">
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+    <div className="grid grid-cols-1 gap-6">
+      {/* Key Metrics Row */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="glass flex items-center gap-4 rounded-lg p-4">
           <div className="rounded-full bg-blue-500/20 p-3 text-blue-400">
             <Activity className="h-6 w-6" />
@@ -72,31 +72,29 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Charts Row 1 */}
+      {/* Charts Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="h-80">
+        {/* Row 1: System Load and Drift */}
+        <div>
           <MetricChart
             title="System Load (CPU & Memory)"
             metrics={['cpu_percent', 'memory_percent']}
             colors={['#3b82f6', '#f97316']}
           />
         </div>
-        <div className="h-80">
+        <div>
           <DriftChart />
         </div>
-      </div>
 
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="h-80">
+        {/* Row 2: Network and Anomalies */}
+        <div>
           <MetricChart
             title="Network Activity (KB/s)"
             metrics={['bytes_sent', 'bytes_recv']}
             colors={['#10b981', '#8b5cf6']}
           />
         </div>
-        {/* Placeholder for another chart or list */}
-        <div className="glass h-80 rounded-lg p-6">
+        <div className="glass min-h-[350px] rounded-lg p-6">
           <h3 className="mb-4 text-lg font-medium text-foreground">Recent Anomalies</h3>
           <div className="flex h-full flex-col justify-center text-center text-muted-foreground">
             No anomalies detected in the last hour.

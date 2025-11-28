@@ -1,6 +1,15 @@
 import { useState } from 'react'
-import { Terminal, Play, Loader2 } from 'lucide-react'
+import { Terminal, Play, Loader2, Sparkles } from 'lucide-react'
 import { api } from '../lib/api'
+
+const EXAMPLES = [
+  'FIND similar("database error") IN last 1h',
+  'FIND similar("security breach") IN last 24h WHERE cpu > 80',
+  'FIND similar("memory leak") IN last 6h',
+  'FIND similar("failed login") IN last 1h',
+  'FIND similar("payment failure") IN last 7d',
+  'FIND similar("latency spike") IN last 1h WHERE memory > 90',
+]
 
 export function TVQLConsole() {
   const [query, setQuery] = useState('FIND similar("error") IN last 1h WHERE cpu > 50')
@@ -51,6 +60,21 @@ export function TVQLConsole() {
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
             Run Query
           </button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <span className="flex items-center gap-1 py-1 text-sm text-muted-foreground">
+            <Sparkles className="h-3 w-3" /> Try:
+          </span>
+          {EXAMPLES.map((example) => (
+            <button
+              key={example}
+              onClick={() => setQuery(example)}
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-xs text-green-200 transition-colors hover:bg-white/10"
+            >
+              {example}
+            </button>
+          ))}
         </div>
 
         {error && (
