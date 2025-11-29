@@ -94,6 +94,81 @@ uv run python scripts/run_analytics.py
 - **Prometheus**: 19090
 - **ZeroMQ**: 5555 (PULL socket)
 
+## AI-Assisted Workflow
+- **Kiro Hooks**: Automated code review triggers
+  - `ui-design-review.kiro.hook`: Reviews UI changes for design system consistency, accessibility, and performance
+  - `backend-review.kiro.hook`: Reviews Python code for architecture, type safety, and async correctness
+
+## DuckDB Best Practices
+
+### Connection Management
+- **Use the shared connection**: Always use `get_db_connection()` from `tvos.db`
+- **Never create new connections**: DuckDB uses file-based locking; multiple connections can cause conflicts
+- **Thread-safe**: The shared connection is thread-safe and protected by a lock
+- **Don't close the connection**: The shared connection persists for the application lifetime
+
+### Database Initialization
+- **Use `init_db()`**: Call once at application startup to create tables and indexes
+- **Idempotent schema**: All `CREATE TABLE` statements use `IF NOT EXISTS`
+- **Reset for testing**: Set `tvos.db._SHARED_CONN = None` to reset the global connection in tests
+
+### Testing with DuckDB
+```python
+# Create a temporary test database
+import tempfile
+import os
+
+def setup_test_db():
+    temp_dir = tempfile.mkdtemp()
+    db_path = os.path.join(temp_dir, 'test.duckdb')
+    
+    # Override config
+    Config.DUCKDB_PATH = db_path
+    
+    # Reset global connection
+    import tvos.db
+    tvos.db._SHARED_CONN = None
+    
+    # Initialize schema
+    from tvos.db import init_db
+    init_db()
+    
+    return db_path
+
+# Clean up after tests
+def cleanup_test_db(db_path):
+    import shutil
+    shutil.rmtree(os.path.dirname(db_path))
+```
+
+### Common Patterns
+```python
+# Get connection
+from tvos.db import get_db_connection
+conn = get_db_connection()
+
+# Execute query
+result = conn.execute("SELECT * FROM events WHERE source = ?", [source]).fetchall()
+
+# Insert with parameters (prevents SQL injection)
+conn.execute(
+    "INSERT INTO events (event_id, timestamp_ms, source) VALUES (?, ?, ?)",
+    [event_id, timestamp, source]
+)
+
+# Check if record exists
+exists = conn.execute(
+    "SELECT COUNT(*) FROM events WHERE event_id = ?", 
+    [event_id]
+).fetchone()[0] > 0
+```
+
+### Avoid Common Pitfalls
+- **Don't use string formatting for SQL**: Always use parameterized queries with `?` placeholders
+- **Don't create temporary files with content**: Let DuckDB create the database file itself
+- **Don't mix read-only and read-write modes**: Always use read-write mode (default)
+- **Don't forget to handle NULL values**: Use `COALESCE()` or check for None in Python
+
 ## Code Style
 - **Python**: Follow PEP 8, use type hints
 - **TypeScript**: Strict mode enabled

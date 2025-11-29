@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Backend Architecture Review",
+  "description": "Reviews Python backend code (FastAPI, DuckDB, Weaviate) for architectural correctness, type safety, and performance patterns.",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Review the modified Python backend files. Act as a Principal Software Engineer.\n\nEvaluate the code against these criteria:\n\n1. **Type Safety**: Ensure strict type hints (Pydantic models, typing module) are used correctly.\n2. **Async Patterns**: Verify correct usage of `async/await` in FastAPI routes and blocking I/O handling.\n3. **Database Patterns**: Check for efficient DuckDB queries, proper connection handling, and SQL injection prevention.\n4. **Vector Operations**: specific checks for Weaviate interactions (batching, error handling).\n5. **Error Handling**: Ensure graceful error recovery and proper HTTP status codes.\n6. **Project Structure**: Verify logic is placed in the correct layers (API vs Logic vs DB).\n7. **Security**: Check for secret handling, input validation, and auth patterns.\n\n**Output Format:**\n- Provide a summary of architectural health.\n- List specific issues with **corrected code snippets**.\n- Highlight any blocking I/O in async paths."
+  }
+}
+

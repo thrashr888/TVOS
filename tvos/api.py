@@ -81,6 +81,12 @@ def startup_event():
     t_analytics = threading.Thread(target=run_analytics_worker, daemon=True)
     t_analytics.start()
     print("Started Analytics Worker thread")
+    
+    # Start Sync Worker
+    from tvos.sync_worker import run_sync_worker
+    t_sync = threading.Thread(target=run_sync_worker, daemon=True)
+    t_sync.start()
+    print("Started Sync Worker thread")
 
 
 # Load model globally for now (or lazy load)

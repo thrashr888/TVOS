@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "UI/UX Design Review",
+  "description": "Automatically reviews UI components, styling, and design patterns when UI files are edited. Provides suggestions for UX improvements, design consistency, accessibility, and visual polish that a world-class design team would implement.",
+  "version": "2",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Review the modified UI files for UX, styling, and design improvements. Act as a Lead Product Designer and Frontend Architect.\n\nEvaluate the code against these criteria:\n\n1. **Visual Consistency**: Check color schemes (Tailwind), spacing, typography, and component styling.\n2. **UX Patterns**: Evaluate user flows, interaction patterns, feedback mechanisms, and error states.\n3. **Accessibility**: Review ARIA labels, keyboard navigation, color contrast, and screen reader support.\n4. **Design System**: Ensure consistent use of Tailwind utilities, component patterns, and design tokens.\n5. **Responsive Design**: Check mobile/tablet layouts and breakpoint handling.\n6. **Micro-interactions**: Suggest loading states, transitions, hover effects, and animations.\n7. **Information Hierarchy**: Review layout, visual weight, and content organization.\n8. **Polish**: Look for rough edges like alignment issues, inconsistent borders/shadows, or awkward spacing.\n9. **Performance**: Identify unnecessary re-renders, large layout shifts, or missing memoization (useMemo/useCallback).\n10. **State Management**: Verify efficient use of props, Context, and Zustand.\n\n**Output Format:**\n- Provide specific, actionable recommendations.\n- **Include code blocks** with the suggested fixes applied.\n- Group comments by file."
+  }
+}
