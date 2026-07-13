@@ -20,3 +20,8 @@ ui/dist
 # Generated protobuf files
 *_pb2.py
 *_pb2.pyi
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
